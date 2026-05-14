@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Crew Bag Checklist</title>
+
+<style>
+    *{
+        margin:0;
+        padding:0;
+        box-sizing:border-box;
+        font-family:Arial, Helvetica, sans-serif;
+    }
+
+    body{
+        background:#0f172a;
+        color:white;
+        padding:20px;
+    }
+
+    .container{
+        max-width:900px;
+        margin:auto;
+    }
+
+    h1{
+        text-align:center;
+        margin-bottom:10px;
+        font-size:32px;
+    }
+
+    .subtitle{
+        text-align:center;
+        color:#94a3b8;
+        margin-bottom:25px;
+    }
+
+    .topbar{
+        display:flex;
+        gap:10px;
+        flex-wrap:wrap;
+        margin-bottom:20px;
+    }
+
+    button{
+        background:#1e293b;
+        color:white;
+        border:none;
+        padding:12px 18px;
+        border-radius:12px;
+        cursor:pointer;
+        transition:0.2s;
+        font-weight:bold;
+    }
+
+    button:hover{
+        background:#334155;
+    }
+
+    .stats{
+        margin-left:auto;
+        background:#111827;
+        padding:12px 18px;
+        border-radius:12px;
+        color:#38bdf8;
+        font-weight:bold;
+    }
+
+    .checklist{
+        display:flex;
+        flex-direction:column;
+        gap:12px;
+    }
+
+    .item{
+        background:#111827;
+        border:1px solid #1e293b;
+        padding:18px;
+        border-radius:18px;
+        display:flex;
+        align-items:flex-start;
+        gap:15px;
+        transition:0.25s;
+    }
+
+    .item:hover{
+        transform:translateY(-2px);
+        border-color:#38bdf8;
+    }
+
+    .item.checked{
+        background:#052e16;
+        border-color:#22c55e;
+    }
+
+    .checkbox{
+        width:26px;
+        height:26px;
+        border-radius:8px;
+        border:2px solid #64748b;
+        cursor:pointer;
+        flex-shrink:0;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        margin-top:3px;
+        transition:0.2s;
+    }
+
+    .checked .checkbox{
+        background:#22c55e;
+        border-color:#22c55e;
+    }
+
+    .checkbox::after{
+        content:"✓";
+        color:white;
+        font-weight:bold;
+        display:none;
+    }
+
+    .checked .checkbox::after{
+        display:block;
+    }
+
+    .content{
+        flex:1;
+    }
+
+    .title{
+        font-size:18px;
+        line-height:1.4;
+    }
+
+    .time{
+        margin-top:8px;
+        font-size:14px;
+        color:#94a3b8;
+    }
+
+    .checked .time{
+        color:#86efac;
+    }
+
+    footer{
+        margin-top:30px;
+        text-align:center;
+        color:#64748b;
+        font-size:14px;
+    }
+
+    @media(max-width:700px){
+        h1{
+            font-size:26px;
+        }
+
+        .title{
+            font-size:16px;
+        }
+
+        .stats{
+            width:100%;
+            text-align:center;
+            margin-left:0;
+        }
+    }
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>✈ Crew Bag Checklist</h1>
+    <div class="subtitle">
+        Offline • Auto Save • GitHub Ready
+    </div>
+
+    <div class="topbar">
+        <button onclick="resetChecklist()">Sıfırla</button>
+        <button onclick="exportData()">Yedekle</button>
+        <button onclick="importData()">Geri Yükle</button>
+
+        <div class="stats" id="stats">
+            0 / 21 Tamamlandı
+        </div>
+    </div>
+
+    <div class="checklist" id="checklist"></div>
+
+    <footer>
+        Veriler cihazında saklanır (offline çalışır)
+    </footer>
+
+</div>
+
+<script>
+
+const items = [
+"Pasaport",
+"Uçak Mürettebat Belgesi (Landing Kart)",
+"Apron Kartı",
+"Şirket Kimlik Kartı",
+"Kabin Ekibi Uçak Tipi / Varyant Uygunluğu Belgesi",
+"Sağlık Belgesi",
+"İlk Yardımcı Kartı",
+"Sarı Güvenlik Yeleği",
+"Kişisel Bakım Ürünleri",
+"Uçuş Sırasında Satış İçin Kullanılan Cüzdan",
+"Hesap Makinesi",
+"Buz Maşası",
+"Seyahat Dikiş Seti",
+"2 Adet Yedek Çorap",
+"Küçük Not Defteri ve Mavi Kalem",
+"Ayakkabı Boyası veya Sünger",
+"Gözlük / Lens / İşitme Cihazı Yedekleri",
+"Kabin Ekibi Anons Kitabı (Dijital)",
+"Görev Kontrol Listeleri (SCCM)",
+"Kabin Hizmeti ve İkram El Kitabı",
+"Uçuş İçi Satış Tablet"
+];
+
+const checklist = document.getElementById("checklist");
+
+let savedData = JSON.parse(localStorage.getItem("crewChecklist")) || {};
+
+function renderChecklist(){
+
+    checklist.innerHTML = "";
+
+    items.forEach((item,index)=>{
+
+        const data = savedData[index] || {
+            checked:false,
+            time:null
+        };
+
+        const div = document.createElement("div");
+        div.className = data.checked ? "item checked" : "item";
+
+        div.innerHTML = `
+            <div class="checkbox"></div>
+
+            <div class="content">
+                <div class="title">
+                    ${index+1}. ${item}
+                </div>
+
+                <div class="time">
+                    ${data.time ? "Check zamanı: " + data.time : "Henüz işaretlenmedi"}
+                </div>
+            </div>
+        `;
+
+        div.addEventListener("click",()=>toggleItem(index));
+
+        checklist.appendChild(div);
+    });
+
+    updateStats();
+}
+
+function toggleItem(index){
+
+    if(!savedData[index]){
+        savedData[index] = {};
+    }
+
+    savedData[index].checked = !savedData[index].checked;
+
+    if(savedData[index].checked){
+
+        const now = new Date();
+
+        savedData[index].time =
+            now.toLocaleDateString("tr-TR") +
+            " " +
+            now.toLocaleTimeString("tr-TR",{
+                hour:"2-digit",
+                minute:"2-digit"
+            });
+
+    }else{
+        savedData[index].time = null;
+    }
+
+    saveData();
+    renderChecklist();
+}
+
+function saveData(){
+    localStorage.setItem(
+        "crewChecklist",
+        JSON.stringify(savedData)
+    );
+}
+
+function resetChecklist(){
+
+    if(confirm("Tüm checklist sıfırlansın mı?")){
+
+        localStorage.removeItem("crewChecklist");
+
+        savedData = {};
+
+        renderChecklist();
+    }
+}
+
+function updateStats(){
+
+    const completed = Object.values(savedData)
+        .filter(item => item.checked).length;
+
+    document.getElementById("stats").innerText =
+        `${completed} / ${items.length} Tamamlandı`;
+}
+
+function exportData(){
+
+    const data = JSON.stringify(savedData);
+
+    navigator.clipboard.writeText(data);
+
+    alert("Yedek veri panoya kopyalandı.");
+}
+
+function importData(){
+
+    const input = prompt("Yedek veriyi yapıştır:");
+
+    if(!input) return;
+
+    try{
+
+        savedData = JSON.parse(input);
+
+        saveData();
+
+        renderChecklist();
+
+        alert("Veriler geri yüklendi.");
+
+    }catch{
+        alert("Geçersiz veri.");
+    }
+}
+
+renderChecklist();
+
+</script>
+
+</body>
+</html>
